@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from 'child_process';
-import type { ManagedServer, ConnectionEvent, ManagerConfig, McpServerConfig } from './types.js';
+import type { ManagedServer, ConnectionEvent, ManagerConfig, McpServerConfig, McpScope } from './types.js';
 import { notifyDrop, notifyReconnect, notifyFailed, notifyDegraded } from './notifier.js';
 
 const BACKOFF = [5000, 15000, 45000];
@@ -16,11 +16,13 @@ export class McpDaemon {
     this.config = config;
   }
 
-  registerServer(name: string, serverConfig: McpServerConfig): void {
+  registerServer(name: string, serverConfig: McpServerConfig, scope: McpScope = 'global', sourcePath = ''): void {
     if (this.config.ignoreServers.includes(name)) return;
     this.servers.set(name, {
       name,
       config: serverConfig,
+      scope,
+      sourcePath,
       state: 'unknown',
       restartAttempts: 0,
     });

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { loadManagerConfig, loadClaudeConfig } from './config.js';
+import { loadManagerConfig, discoverAllServers, getScopeLabel } from './config.js';
 import { McpDaemon } from './daemon.js';
 import { startDashboard } from './dashboard.js';
 import { startMcpServer } from './mcp-server.js';
@@ -10,34 +10,25 @@ process.on('unhandledRejection', (reason) => {
 
 async function main(): Promise<void> {
   const managerConfig = loadManagerConfig();
-  const claudeConfig = loadClaudeConfig();
+  const allServers = discoverAllServers();
 
   const daemon = new McpDaemon(managerConfig);
 
-  if (claudeConfig) {
-    const servers = claudeConfig.config.mcpServers ?? {};
-    const names = Object.keys(servers);
-    console.error(`[mcp-manager] Found ${names.length} server(s) in ${claudeConfig.path}`);
-    for (const [name, cfg] of Object.entries(servers)) {
-      // Don't monitor ourselves to avoid loops
-      if (name === 'mcp-manager') continue;
-      daemon.registerServer(name, cfg);
-    }
+  if (allServers.length === 0) {
+    console.error('[mcp-manager] No servers found in any config source');
   } else {
-    console.error('[mcp-manager] No claude_desktop_config.json or .mcp.json found — monitoring 0 servers');
+    for (const s of allServers) {
+      if (s.name === 'mcp-manager') continue;
+      console.error(`[mcp-manager] Registering "${s.name}" (${getScopeLabel(s.scope)})`);
+      daemon.registerServer(s.name, s.config, s.scope, s.sourcePath);
+    }
   }
 
   startDashboard(managerConfig.dashboardPort, daemon);
-  await startMcpServer(daemon, claudeConfig);
+  await startMcpServer(daemon, allServers);
 
-  process.on('SIGINT', () => {
-    daemon.stopAll();
-    process.exit(0);
-  });
-  process.on('SIGTERM', () => {
-    daemon.stopAll();
-    process.exit(0);
-  });
+  process.on('SIGINT', () => { daemon.stopAll(); process.exit(0); });
+  process.on('SIGTERM', () => { daemon.stopAll(); process.exit(0); });
 }
 
 main().catch((err) => {

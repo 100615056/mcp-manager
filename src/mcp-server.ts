@@ -5,7 +5,8 @@ import {
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import type { McpDaemon } from './daemon.js';
-import type { ClaudeDesktopConfig } from './types.js';
+import type { DiscoveredServer } from './types.js';
+import { getScopeLabel } from './config.js';
 
 function text(content: string) {
   return { content: [{ type: 'text' as const, text: content }] };
@@ -13,7 +14,7 @@ function text(content: string) {
 
 export async function startMcpServer(
   daemon: McpDaemon,
-  claudeConfig: { path: string; config: ClaudeDesktopConfig } | null,
+  allServers: DiscoveredServer[],
 ): Promise<void> {
   const server = new Server(
     { name: 'mcp-manager', version: '0.1.0' },
@@ -24,7 +25,7 @@ export async function startMcpServer(
     tools: [
       {
         name: 'mcp_status',
-        description: 'List all configured MCP servers with their current state (connected/dropped/degraded/unknown/failed)',
+        description: 'List all configured MCP servers with their current state (connected/dropped/degraded/unknown/failed) and scope (global/project/user-settings/desktop)',
         inputSchema: { type: 'object', properties: {} },
       },
       {
@@ -51,7 +52,7 @@ export async function startMcpServer(
       },
       {
         name: 'mcp_config',
-        description: 'Show parsed MCP server configuration from claude_desktop_config.json or .mcp.json',
+        description: 'Show all discovered MCP servers grouped by scope (project / user-settings / global / desktop)',
         inputSchema: { type: 'object', properties: {} },
       },
     ],
@@ -64,13 +65,13 @@ export async function startMcpServer(
       case 'mcp_status': {
         const servers = daemon.getStatus();
         if (servers.length === 0) {
-          return text('No servers configured. Ensure claude_desktop_config.json or .mcp.json is present.');
+          return text('No servers found in any config source (project/.claude/settings.json, ~/.claude/settings.json, ~/.claude.json, claude_desktop_config.json).');
         }
         const rows = servers.map((s) => {
           const ping = s.lastPingMs != null ? `${s.lastPingMs}ms` : '—';
           const seen = s.lastSeen ? s.lastSeen.toLocaleTimeString() : '—';
           const error = s.lastError ? ` | error: ${s.lastError}` : '';
-          return `• ${s.name}: ${s.state.toUpperCase()} | latency: ${ping} | last seen: ${seen} | restarts: ${s.restartAttempts}${error}`;
+          return `• ${s.name} [${s.scope}]: ${s.state.toUpperCase()} | latency: ${ping} | last seen: ${seen} | restarts: ${s.restartAttempts}${error}`;
         });
         return text(`MCP Server Status (${new Date().toLocaleTimeString()})\n\n${rows.join('\n')}`);
       }
@@ -106,17 +107,29 @@ export async function startMcpServer(
       }
 
       case 'mcp_config': {
-        if (!claudeConfig) {
-          return text('No config file found. Checked claude_desktop_config.json and .mcp.json.');
+        if (allServers.length === 0) {
+          return text('No MCP servers found in any config source.');
         }
-        const servers = claudeConfig.config.mcpServers ?? {};
-        const rows = Object.entries(servers).map(([name, cfg]) => {
-          const cmd = [cfg.command, ...(cfg.args ?? [])].join(' ');
-          return `• ${name}: ${cmd}`;
-        });
-        const isWaypoint = Object.keys(servers).some((n) => n.includes('waypoint'));
-        const waypointNote = isWaypoint ? '\n\n[waypoint-mcp detected in config]' : '';
-        return text(`Config: ${claudeConfig.path}\n\n${rows.join('\n') || '(no servers)'}${waypointNote}`);
+
+        // Group by scope
+        const byScope = new Map<string, DiscoveredServer[]>();
+        for (const s of allServers) {
+          const label = getScopeLabel(s.scope);
+          if (!byScope.has(label)) byScope.set(label, []);
+          byScope.get(label)!.push(s);
+        }
+
+        const sections: string[] = [];
+        for (const [label, servers] of byScope) {
+          const rows = servers.map((s) => {
+            const cmd = [s.config.command, ...(s.config.args ?? [])].join(' ');
+            const isWaypoint = s.name.includes('waypoint') ? ' [waypoint-mcp detected]' : '';
+            return `  • ${s.name}: ${cmd}${isWaypoint}`;
+          });
+          sections.push(`${label}\n${rows.join('\n')}`);
+        }
+
+        return text(`Discovered MCP Servers (${allServers.length} total)\n\n${sections.join('\n\n')}`);
       }
 
       default:

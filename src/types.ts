@@ -1,5 +1,12 @@
 export type ServerState = 'connected' | 'dropped' | 'degraded' | 'unknown' | 'failed';
 
+export type McpScope =
+  | 'desktop'         // ~/Library/Application Support/Claude/claude_desktop_config.json
+  | 'global'          // ~/.claude.json
+  | 'user-settings'   // ~/.claude/settings.json
+  | 'project'         // .claude/settings.json in cwd
+  | 'mcp-json';       // .mcp.json
+
 export interface McpServerConfig {
   command: string;
   args?: string[];
@@ -10,9 +17,18 @@ export interface ClaudeDesktopConfig {
   mcpServers?: Record<string, McpServerConfig>;
 }
 
+export interface DiscoveredServer {
+  name: string;
+  config: McpServerConfig;
+  scope: McpScope;
+  sourcePath: string;
+}
+
 export interface ManagedServer {
   name: string;
   config: McpServerConfig;
+  scope: McpScope;
+  sourcePath: string;
   state: ServerState;
   pid?: number;
   lastPingMs?: number;
