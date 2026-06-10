@@ -1,3 +1,13 @@
+# Dependencies and build artifacts
 node_modules/
-dist/
+*.tgz
 *.js.map
+
+# Internal files — not for version control
+CLAUDE.md
+
+# Env and secrets
+.env
+.env.*
+*.key
+*.pem

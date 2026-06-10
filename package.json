@@ -13,9 +13,12 @@
     "start": "node dist/index.js",
     "prepublishOnly": "npm run build"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": ["mcp", "claude", "modelcontextprotocol", "monitor", "daemon"],
   "author": "Waycraft",
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "execa": "^9.0.0",
@@ -26,6 +29,9 @@
     "@types/node": "^20.0.0",
     "@types/node-notifier": "^8.0.5",
     "typescript": "^5.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "engines": {
     "node": ">=18"

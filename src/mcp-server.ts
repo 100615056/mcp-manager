@@ -25,26 +25,29 @@ export async function startMcpServer(
     tools: [
       {
         name: 'mcp_status',
-        description: 'List all configured MCP servers with their current state (connected/dropped/degraded/unknown/failed) and scope (global/project/user-settings/desktop)',
+        description: 'Live connection state right now — lists all MCP servers with state (connected/dropped/degraded/unknown/failed), latency, and scope. Use this to see what is working. For how servers are configured on disk, use mcp_config.',
         inputSchema: { type: 'object', properties: {} },
       },
       {
         name: 'mcp_restart',
-        description: 'Restart a specific MCP server by name',
+        description: 'Restart a specific MCP server by name. By default skips the server if it is already healthy — set force: true to restart regardless of state.',
         inputSchema: {
           type: 'object',
-          properties: { name: { type: 'string', description: 'Server name to restart' } },
+          properties: {
+            name: { type: 'string', description: 'Server name to restart' },
+            force: { type: 'boolean', description: 'Set to true to restart even if the server is currently healthy. Default: false (skips healthy servers).' },
+          },
           required: ['name'],
         },
       },
       {
         name: 'mcp_restart_all',
-        description: 'Restart all dropped or failed MCP servers at once',
+        description: 'Restart all dropped or failed MCP servers at once. Skips servers that are currently healthy.',
         inputSchema: { type: 'object', properties: {} },
       },
       {
         name: 'mcp_history',
-        description: 'Show recent connection events with timestamps and details',
+        description: 'Show recent connection events with timestamps. Drop events include the exit code and last stderr output so you can see what the server printed before it crashed.',
         inputSchema: {
           type: 'object',
           properties: { limit: { type: 'number', description: 'Number of events to return (default 50)' } },
@@ -52,7 +55,7 @@ export async function startMcpServer(
       },
       {
         name: 'mcp_config',
-        description: 'Show all discovered MCP servers grouped by scope (project / user-settings / global / desktop)',
+        description: 'Disk configuration — shows how each MCP server is defined in settings files, grouped by scope (project / user-settings / global / desktop). Use this to verify launch commands and file paths. For live connection state, use mcp_status.',
         inputSchema: { type: 'object', properties: {} },
       },
     ],
@@ -78,9 +81,14 @@ export async function startMcpServer(
 
       case 'mcp_restart': {
         const name = args.name as string;
+        const force = args.force as boolean | undefined;
         const servers = daemon.getStatus();
-        if (!servers.find((s) => s.name === name)) {
+        const server = servers.find((s) => s.name === name);
+        if (!server) {
           return text(`Unknown server: "${name}". Available: ${servers.map((s) => s.name).join(', ')}`);
+        }
+        if (!force && (server.state === 'connected' || server.state === 'degraded')) {
+          return text(`"${name}" is currently ${server.state} — skipping restart. Use force: true to restart a healthy server.`);
         }
         daemon.restart(name);
         return text(`Restarting "${name}"...`);

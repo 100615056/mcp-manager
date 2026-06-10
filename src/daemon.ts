@@ -10,6 +10,7 @@ export class McpDaemon {
   private processes = new Map<string, ChildProcess>();
   private history: ConnectionEvent[] = [];
   private pingTimers = new Map<string, NodeJS.Timeout>();
+  private stderrBuffers = new Map<string, string>();
   private config: ManagerConfig;
 
   constructor(config: ManagerConfig) {
@@ -55,7 +56,10 @@ export class McpDaemon {
         const s = this.servers.get(name);
         if (!s) return;
         s.state = 'dropped';
-        s.lastError = `exited with code ${code ?? 'null'}`;
+        const exitMsg = `exited with code ${code ?? 'null'}`;
+        const stderr = this.stderrBuffers.get(name)?.trim();
+        s.lastError = stderr ? `${exitMsg} — ${stderr}` : exitMsg;
+        this.stderrBuffers.delete(name);
         this.logEvent(name, 'dropped', s.lastError);
         this.clearPing(name);
         if (this.config.notifications) {
@@ -66,7 +70,10 @@ export class McpDaemon {
 
       proc.stderr?.on('data', (data: Buffer) => {
         const s = this.servers.get(name);
-        if (s) s.lastError = data.toString().slice(0, 200);
+        const text = data.toString().slice(0, 300);
+        if (s) s.lastError = text;
+        const existing = this.stderrBuffers.get(name) ?? '';
+        this.stderrBuffers.set(name, (existing + text).slice(-500));
       });
 
       this.processes.set(name, proc);
