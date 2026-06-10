@@ -1,0 +1,9 @@
+{
+  "pingInterval": 10000,
+  "maxRestartAttempts": 3,
+  "degradedThresholdMs": 500,
+  "notifications": true,
+  "dashboardPort": 3131,
+  "ignoreServers": [],
+  "autoRestart": true
+}
