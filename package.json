@@ -17,8 +17,8 @@
     "dist"
   ],
   "keywords": ["mcp", "claude", "modelcontextprotocol", "monitor", "daemon"],
-  "author": "Waycraft",
-  "license": "PolyForm-Noncommercial-1.0.0",
+  "author": "Angelica Cusipag",
+  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "execa": "^9.0.0",
