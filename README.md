@@ -96,10 +96,10 @@ claude mcp add waypoint npx @waycraft/waypoint-mcp
 
 Something not working, a server mcp-manager doesn't handle well, or a feature you'd find useful?
 
-→ [GitHub Discussions](https://github.com/explorenav-dev/mcp-manager/discussions)
+→ [GitHub Discussions](https://github.com/100615056/mcp-manager/discussions)
 
 ---
 
 ## License
 
-[PolyForm Noncommercial License 1.0](https://polyformproject.org/licenses/noncommercial/1.0.0/) — free for personal and non-commercial use.
+[MIT](LICENSE)
