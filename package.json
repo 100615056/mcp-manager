@@ -1,6 +1,6 @@
 {
   "name": "@waycraft/mcp-manager",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server health monitor, auto-restart daemon, and status dashboard",
   "type": "module",
   "bin": {
@@ -16,7 +16,13 @@
   "files": [
     "dist"
   ],
-  "keywords": ["mcp", "claude", "modelcontextprotocol", "monitor", "daemon"],
+  "keywords": [
+    "mcp",
+    "claude",
+    "modelcontextprotocol",
+    "monitor",
+    "daemon"
+  ],
   "author": "Angelica Cusipag",
   "license": "MIT",
   "dependencies": {
