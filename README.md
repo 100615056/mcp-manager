@@ -171,6 +171,25 @@ mcp-manager re-reads config from disk on manual restart (`mcp_restart`). If you 
 
 ---
 
+## Security notes
+
+**Environment variables:** mcp-manager passes the parent process's environment to spawned MCP servers (the standard Node.js behavior). If your MCP servers need specific env vars (API keys, tokens), set them in the parent process or in the server's `env` config.
+
+**Dashboard:** The dashboard runs on `127.0.0.1:3131` (localhost only) with no authentication. To disable it entirely, set `dashboardPort: 0` in `mcp-manager.config.json`.
+
+---
+
+## Part of the Waycraft MCP Suite
+
+mcp-manager is one of four MCP tools designed to work together:
+
+- **[mcp-manager](https://github.com/100615056/mcp-manager)** — monitor and recover MCP servers
+- **[session-continuity](https://github.com/100615056/session-continuity)** — persistent memory across sessions
+- **[waypoint-mcp](https://github.com/100615056/waypoint-mcp)** — guided engineering workflow (goal → ship)
+- **[prism](https://github.com/100615056/prism-mcp)** — persona-based testing and critique
+
+---
+
 ## Feedback & Discussion
 
 Something not working, a server mcp-manager doesn't handle well, or a feature you'd find useful?
