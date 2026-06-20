@@ -94,7 +94,23 @@ export function discoverAllServers(): DiscoveredServer[] {
       : join(home, '.config', 'Claude', 'claude_desktop_config.json');
   add(extractServers(desktopPath, 'desktop', readJson(desktopPath)));
 
-  // 5. .mcp.json fallbacks
+  // 5. Cursor: .cursor/mcp.json (project) and ~/.cursor/mcp.json (global)
+  for (const p of [join(process.cwd(), '.cursor', 'mcp.json'), join(home, '.cursor', 'mcp.json')]) {
+    add(extractServers(p, 'cursor', readJson(p)));
+  }
+
+  // 6. VS Code (Copilot): .vscode/mcp.json — uses "servers" key instead of "mcpServers"
+  const vscodeMcp = join(process.cwd(), '.vscode', 'mcp.json');
+  const vscodeRaw = readJson<{ servers?: Record<string, unknown>; mcpServers?: Record<string, unknown> }>(vscodeMcp);
+  if (vscodeRaw) {
+    add(extractServers(vscodeMcp, 'vscode', { mcpServers: vscodeRaw.servers ?? vscodeRaw.mcpServers }));
+  }
+
+  // 7. Windsurf: ~/.codeium/windsurf/mcp_config.json
+  const windsurfMcp = join(home, '.codeium', 'windsurf', 'mcp_config.json');
+  add(extractServers(windsurfMcp, 'windsurf', readJson(windsurfMcp)));
+
+  // 8. .mcp.json fallbacks
   for (const p of [join(process.cwd(), '.mcp.json'), join(home, '.mcp.json')]) {
     const raw = readJson<{ mcpServers?: Record<string, unknown> }>(p);
     const servers = raw?.mcpServers
@@ -113,5 +129,8 @@ export function getScopeLabel(scope: DiscoveredServer['scope']): string {
     global: 'global (~/.claude.json)',
     desktop: 'desktop (claude_desktop_config.json)',
     'mcp-json': '.mcp.json',
+    cursor: 'cursor (.cursor/mcp.json)',
+    vscode: 'vscode (.vscode/mcp.json)',
+    windsurf: 'windsurf (mcp_config.json)',
   }[scope];
 }

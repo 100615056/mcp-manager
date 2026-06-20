@@ -25,6 +25,64 @@ Or add manually to `~/.claude/mcp.json` (global) or `.claude/mcp.json` (project-
 
 ---
 
+## Other editors
+
+<details>
+<summary><strong>Cursor</strong></summary>
+
+Add to `.cursor/mcp.json` in your project root (or `~/.cursor/mcp.json` globally):
+
+```json
+{
+  "mcpServers": {
+    "mcp-manager": {
+      "command": "npx",
+      "args": ["@waycraft/mcp-manager"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>VS Code (Copilot)</strong></summary>
+
+Add to `.vscode/mcp.json` in your project root:
+
+```json
+{
+  "servers": {
+    "mcp-manager": {
+      "command": "npx",
+      "args": ["@waycraft/mcp-manager"]
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>Windsurf</strong></summary>
+
+Add to `~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "mcp-manager": {
+      "command": "npx",
+      "args": ["@waycraft/mcp-manager"]
+    }
+  }
+}
+```
+
+</details>
+
+---
+
 ## What it does
 
 When an MCP server drops, flaps, or fails to restart, diagnosing it normally means leaving the conversation to check logs or edit config files. mcp-manager exposes the live state, disk config, restart control, and event history of every connected server as MCP tools Claude can call directly.

@@ -68,7 +68,7 @@ export async function startMcpServer(
       case 'mcp_status': {
         const servers = daemon.getStatus();
         if (servers.length === 0) {
-          return text('No servers found in any config source (project/.claude/settings.json, ~/.claude/settings.json, ~/.claude.json, claude_desktop_config.json).');
+          return text('No servers found in any config source (Claude Code, Cursor, VS Code, Windsurf, Claude Desktop, .mcp.json).');
         }
         const rows = servers.map((s) => {
           const ping = s.lastPingMs != null ? `${s.lastPingMs}ms` : '—';

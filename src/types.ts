@@ -5,7 +5,10 @@ export type McpScope =
   | 'global'          // ~/.claude.json
   | 'user-settings'   // ~/.claude/settings.json
   | 'project'         // .claude/settings.json in cwd
-  | 'mcp-json';       // .mcp.json
+  | 'mcp-json'        // .mcp.json
+  | 'cursor'          // .cursor/mcp.json
+  | 'vscode'          // .vscode/mcp.json
+  | 'windsurf';       // ~/.codeium/windsurf/mcp_config.json
 
 export interface McpServerConfig {
   command: string;
