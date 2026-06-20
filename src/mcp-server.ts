@@ -12,6 +12,28 @@ function text(content: string) {
   return { content: [{ type: 'text' as const, text: content }] };
 }
 
+function humanizeError(stderr: string): string {
+  if (stderr.includes('Cannot find module')) {
+    const mod = stderr.match(/Cannot find module '([^']+)'/)?.[1] ?? 'unknown';
+    return `Missing module "${mod}" — check that the package is installed (npm install) and the path is correct.`;
+  }
+  if (stderr.includes('ENOENT')) {
+    const path = stderr.match(/ENOENT[^']*'([^']+)'/)?.[1] ?? '';
+    return `File or command not found${path ? `: ${path}` : ''}. Check the command path in your MCP config.`;
+  }
+  if (stderr.includes('EACCES') || stderr.includes('Permission denied'))
+    return 'Permission denied — the server process does not have access to a required file or port.';
+  if (stderr.includes('EADDRINUSE'))
+    return 'Port already in use — another process is using the same port. Stop the other process or change the port.';
+  if (stderr.includes('command not found') || stderr.includes('is not recognized'))
+    return 'Command not found — the executable is not installed or not in PATH.';
+  if (stderr.includes('SyntaxError'))
+    return 'JavaScript syntax error in the server code — check for typos or incompatible Node version.';
+  if (stderr.includes('ETIMEOUT') || stderr.includes('ETIMEDOUT'))
+    return 'Connection timed out — check network connectivity and firewall settings.';
+  return stderr.length > 120 ? stderr.slice(0, 120) + '…' : stderr;
+}
+
 export async function startMcpServer(
   daemon: McpDaemon,
   allServers: DiscoveredServer[],
@@ -73,10 +95,16 @@ export async function startMcpServer(
         const rows = servers.map((s) => {
           const ping = s.lastPingMs != null ? `${s.lastPingMs}ms` : '—';
           const seen = s.lastSeen ? s.lastSeen.toLocaleTimeString() : '—';
-          const error = s.lastError ? ` | error: ${s.lastError}` : '';
+          const error = s.lastError ? ` | error: ${humanizeError(s.lastError)}` : '';
           return `• ${s.name} [${s.scope}]: ${s.state.toUpperCase()} | latency: ${ping} | last seen: ${seen} | restarts: ${s.restartAttempts}${error}`;
         });
-        return text(`MCP Server Status (${new Date().toLocaleTimeString()})\n\n${rows.join('\n')}`);
+
+        const failed = servers.filter(s => s.state === 'failed');
+        const stillDown = failed.length > 0
+          ? `\n\n⚠️ ${failed.length} server(s) still down after all retries:\n${failed.map(s => `  • ${s.name}: ${s.lastError ? humanizeError(s.lastError) : 'unknown cause'}`).join('\n')}\n\nTry \`mcp_restart\` with the server name, or check the config with \`mcp_config\`.`
+          : '';
+
+        return text(`MCP Server Status (${new Date().toLocaleTimeString()})\n\n${rows.join('\n')}${stillDown}`);
       }
 
       case 'mcp_restart': {

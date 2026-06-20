@@ -2,6 +2,8 @@
 
 Monitor and recover MCP servers connected to Claude — without touching settings files or restarting Claude.
 
+**What is this for?** MCP servers are external tools that AI assistants like Claude can call. They crash, hang, or lose connection — and when they do, your assistant silently loses capabilities. mcp-manager watches every server, auto-restarts failures, and gives your assistant tools to diagnose problems without leaving the conversation.
+
 ---
 
 ## Install
@@ -147,6 +149,25 @@ claude mcp add session-continuity npx session-continuity
 ```bash
 claude mcp add waypoint npx @waycraft/waypoint-mcp
 ```
+
+---
+
+## Troubleshooting
+
+**"Cannot find module" or ENOENT errors**
+The server's launch command points to a file that doesn't exist. Check the path in your MCP config — common causes: package not installed (`npm install`), wrong path after a project move, or `npx` can't resolve the package.
+
+**Server restarts every few seconds then stops**
+mcp-manager retries 3 times with backoff (5s → 15s → 45s), then marks the server as failed. Check `mcp_history` for the stderr output. If the error is unrecoverable (missing module, permission denied), it stops immediately.
+
+**"Port already in use" (EADDRINUSE)**
+Another process is using the same port. Find it with `lsof -i :PORT` and stop it, or change the port in the server's config.
+
+**Server shows "connected" but tools don't work**
+The server is running but may not be responding to tool calls correctly. Try `mcp_restart --force` to restart even healthy-looking servers.
+
+**Config changes aren't picked up**
+mcp-manager re-reads config from disk on manual restart (`mcp_restart`). If you changed a config file, restart the affected server.
 
 ---
 
