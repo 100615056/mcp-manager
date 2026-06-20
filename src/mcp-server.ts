@@ -48,7 +48,12 @@ export async function startMcpServer(
       {
         name: 'mcp_status',
         description: 'Live connection state right now — lists all MCP servers with state (connected/dropped/degraded/unknown/failed), latency, and scope. Use this to see what is working. For how servers are configured on disk, use mcp_config.',
-        inputSchema: { type: 'object', properties: {} },
+        inputSchema: {
+          type: 'object',
+          properties: {
+            scope: { type: 'string', description: 'Filter by scope: project, user-settings, global, desktop, cursor, vscode, windsurf, mcp-json. Omit to show all.' },
+          },
+        },
       },
       {
         name: 'mcp_restart',
@@ -88,9 +93,15 @@ export async function startMcpServer(
 
     switch (req.params.name) {
       case 'mcp_status': {
-        const servers = daemon.getStatus();
+        const scopeFilter = args.scope as string | undefined;
+        const allStatus = daemon.getStatus();
+        const servers = scopeFilter
+          ? allStatus.filter(s => s.scope === scopeFilter)
+          : allStatus;
         if (servers.length === 0) {
-          return text('No servers found in any config source (Claude Code, Cursor, VS Code, Windsurf, Claude Desktop, .mcp.json).');
+          return text(scopeFilter
+            ? `No servers found with scope "${scopeFilter}". Available scopes: ${Array.from(new Set(allStatus.map(s => s.scope))).join(', ') || 'none'}`
+            : 'No servers found in any config source (Claude Code, Cursor, VS Code, Windsurf, Claude Desktop, .mcp.json).');
         }
         const rows = servers.map((s) => {
           const ping = s.lastPingMs != null ? `${s.lastPingMs}ms` : '—';
