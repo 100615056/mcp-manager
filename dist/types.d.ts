@@ -1,5 +1,5 @@
 export type ServerState = 'connected' | 'dropped' | 'degraded' | 'unknown' | 'failed';
-export type McpScope = 'desktop' | 'global' | 'user-settings' | 'project' | 'mcp-json';
+export type McpScope = 'desktop' | 'global' | 'user-settings' | 'project' | 'mcp-json' | 'cursor' | 'vscode' | 'windsurf';
 export interface McpServerConfig {
     command: string;
     args?: string[];

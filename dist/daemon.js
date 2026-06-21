@@ -1,7 +1,17 @@
 import { spawn } from 'child_process';
 import { notifyDrop, notifyReconnect, notifyFailed, notifyDegraded } from './notifier.js';
+import { discoverAllServers } from './config.js';
 const BACKOFF = [5000, 15000, 45000];
 const PING_TIMEOUT_MS = 5000;
+const UNRECOVERABLE_PATTERNS = [
+    'Cannot find module',
+    'MODULE_NOT_FOUND',
+    'ENOENT',
+    'command not found',
+    'is not recognized',
+    'Permission denied',
+    'EACCES',
+];
 export class McpDaemon {
     servers = new Map();
     processes = new Map();
@@ -57,11 +67,19 @@ export class McpDaemon {
                 this.stderrBuffers.delete(name);
                 this.logEvent(name, 'dropped', s.lastError);
                 this.clearPing(name);
+                const unrecoverable = stderr && UNRECOVERABLE_PATTERNS.some(p => stderr.includes(p));
+                if (unrecoverable) {
+                    s.state = 'failed';
+                    this.logEvent(name, 'failed', `unrecoverable: ${stderr}`);
+                    if (this.config.notifications)
+                        notifyFailed(name);
+                    return;
+                }
                 if (this.config.notifications) {
                     notifyDrop(name, () => this.restart(name));
                 }
                 if (this.config.autoRestart)
-                    this.scheduleRestart(name);
+                    this.scheduleRestart(name, s.restartAttempts);
             });
             proc.stderr?.on('data', (data) => {
                 const s = this.servers.get(name);
@@ -184,6 +202,11 @@ export class McpDaemon {
         if (server) {
             server.state = 'unknown';
             server.restartAttempts = 0;
+            const fresh = discoverAllServers().find(s => s.name === name);
+            if (fresh) {
+                server.config = fresh.config;
+                server.sourcePath = fresh.sourcePath;
+            }
         }
         this.startProcess(name);
     }
